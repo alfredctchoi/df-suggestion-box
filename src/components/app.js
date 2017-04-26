@@ -58,6 +58,12 @@ class App extends Component {
         }
       },
     };
+
+    // const ref = firebase.database().ref('/box-abc');
+    // ref.on('value', (res) => {
+    //   console.log(res.val());
+    // });
+    // ref.limitToFirst(50);
   }
 
   render() {
@@ -107,13 +113,11 @@ class App extends Component {
     this.onContinue();
   }
 
-  onContinue() {
-    if (!this.hasValidBoxId()) {
-      this.setStateWithError();
-      return;
-    }
-
-    this.setState({step: STEPS.COMMENT_INPUT});
+  onContinue(boxId) {
+    this.setState({
+      inputBoxId: boxId,
+      step: STEPS.COMMENT_INPUT
+    });
   }
 
   onCommentChange({target}) {
@@ -125,7 +129,7 @@ class App extends Component {
       created: Date.now(),
       comment: this.state.commentInput
     };
-    const ref = firebase.database().ref(`/box-${this.state.inputBoxId}`);
+    const ref = firebase.database().ref(`/box-${this.state.inputBoxId}/feedback`);
     const newComment = ref.push();
     newComment.set(payload)
       .then(() => {
