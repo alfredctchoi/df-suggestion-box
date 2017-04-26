@@ -27,7 +27,7 @@ module.exports = {
   devServer: {
     contentBase: path.join(cwd, 'dist'),
     compress: true,
-    port: 9000
+    port: 9001
   },
   plugins: [
     new HtmlWebpackPlugin({

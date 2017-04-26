@@ -1,7 +1,9 @@
 import React, {Component} from 'react'
 import Row from './row'
-import Column from './column'
 import firebase from 'firebase'
+import FinishedView from './finished-view'
+import BoxInputView from './box-input-view'
+import CommentInputView from './comment-input-view'
 
 import styles from './app.css'
 
@@ -10,61 +12,6 @@ const STEPS = {
   COMMENT_INPUT: 'COMMENT_INPUT',
   FINISHED: 'FINISHED'
 };
-
-const FinishedView = ({backToHome, submitAnotherFeedback}) => (
-  <div className="text-center">
-    <h3>Your feedback has been submitted!</h3>
-    <div className="form-group">
-      <button type="button" className="btn btn-primary" onClick={submitAnotherFeedback}>
-        Submit another feedback
-      </button>
-    </div>
-    <div>
-      <a href="javascript:void(0)" onClick={backToHome}>
-        Back to home page
-      </a>
-    </div>
-  </div>
-);
-
-const BoxInputView = ({onContinue, onChange, onKeyDown}) => (
-  <div>
-    <div className="form-group">
-      <label htmlFor="boxId">Enter your suggestion box id below.</label>
-      <input type="text"
-             id="boxId"
-             className="form-control"
-             placeholder="Box Identifier"
-             onKeyDown={onKeyDown}
-             onChange={onChange}/>
-    </div>
-    <div className="form-group text-right">
-      <button type="submit" className="btn btn-primary" onClick={onContinue}>
-        Proceed to feedback
-      </button>
-    </div>
-  </div>
-);
-
-const CommentInputView = ({onChange, onSubmit, onPrevious}) => (
-  <div>
-    <label htmlFor="comment-input">
-      Please enter your feedback below and click the submit button.
-    </label>
-    <div className="form-group">
-        <textarea id="comment-input" className="form-control" rows="5"
-                  onChange={onChange}/>
-    </div>
-    <div className="form-group text-right">
-      <a className="margin-right" href="javascript:void(0)" onClick={onPrevious}>
-        Previous
-      </a>
-      <button type="submit" className="btn btn-primary" onClick={onSubmit}>
-        Submit my feedback
-      </button>
-    </div>
-  </div>
-);
 
 class App extends Component {
 
@@ -76,11 +23,14 @@ class App extends Component {
     this.onCommentSubmit = this.onCommentSubmit.bind(this);
     this.onCommentChange = this.onCommentChange.bind(this);
     this.onBoxInputChange = this.onBoxInputChange.bind(this);
+    this.setStateWithError = this.setStateWithError.bind(this);
+    this.hasValidBoxId = this.hasValidBoxId.bind(this);
 
     this.state = {
       inputBoxId: null,
       commentInput: null,
-      step: STEPS.BOX_ID
+      step: STEPS.BOX_ID,
+      boxErrorMessage: null
     };
 
     this.viewMapping = {
@@ -89,7 +39,7 @@ class App extends Component {
         props: {
           onContinue: this.onContinue,
           onKeyDown: this.onBoxInputKeyDown,
-          onChange: this.onBoxInputChange
+          onChange: this.onBoxInputChange,
         }
       },
       [STEPS.COMMENT_INPUT]: {
@@ -114,22 +64,40 @@ class App extends Component {
     const view = this.viewMapping[this.state.step];
     const ViewComponent = view.component;
     const viewProps = view.props;
+    const miscProps = {
+      errorMessage: this.state.boxErrorMessage,
+      value: this.state.inputBoxId
+    };
+
     return <div className="container">
       <Row>
-        <Column cols={6} offset={3}>
+        <div className="col-12 col-md-6 offset-md-3">
           <div className="text-center sb__title">
             <h1>DF Suggestion Box</h1>
           </div>
-          <ViewComponent {...viewProps}/>
-        </Column>
+          <ViewComponent {...miscProps} {...viewProps}/>
+        </div>
       </Row>
     </div>
   }
 
-  onBoxInputChange({target}) {
+  hasValidBoxId() {
+    if (!this.state.inputBoxId) return false;
+    if (this.state.inputBoxId.indexOf(' ') > -1) return false;
+    return true;
+  }
+
+  setStateWithError() {
+    let errorMessage = this.hasValidBoxId() ? null : 'Please enter an ID.';
     this.setState({
-      inputBoxId: target.value
+      boxErrorMessage: errorMessage
     })
+  }
+
+  onBoxInputChange({target}) {
+    const newState = this.state;
+    newState.inputBoxId = target.value;
+    this.setState(newState, this.setStateWithError)
   }
 
   onBoxInputKeyDown(e) {
@@ -140,6 +108,11 @@ class App extends Component {
   }
 
   onContinue() {
+    if (!this.hasValidBoxId()) {
+      this.setStateWithError();
+      return;
+    }
+
     this.setState({step: STEPS.COMMENT_INPUT});
   }
 
